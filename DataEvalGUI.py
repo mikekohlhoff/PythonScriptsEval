@@ -48,7 +48,6 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
         self.chk_displayml02j12.clicked.connect(self.setStarkManifold)
         self.chk_displayml1j12.clicked.connect(self.setStarkManifold)
         self.WLScanGraph.pickedValReady.connect(self.updatePickedDisplayStarkScan)
-        self.chk_legendStark.clicked.connect(lambda: self.WLScanGraph.setLegend(self.chk_legendStark.isChecked()))
 
         # Single Traces Display
         self.btn_addSingleTraces.clicked.connect(lambda: self.chk_dispSingleTracesNormalise.setChecked(False))

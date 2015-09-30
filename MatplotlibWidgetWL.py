@@ -36,16 +36,13 @@ class MatplotlibWidgetWL(QGraphicsView):
         self.canvas.mpl_connect('button_press_event', self.onclick)
         self.mpl_toolbar.pan()
         params = {
-                  'legend.fontsize': 12,
                   'xtick.labelsize': 12,
                   'ytick.labelsize': 12,
-                  'legend.handletextpad': .5,
                   'figure.autolayout': True,
                 }
         plt.rcParams.update(params)
         self.data = []
         self.distmeshsurf = 1.
-        self.setlegend = False
         if sys.platform == 'darwin':
             self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
         else:
@@ -165,9 +162,6 @@ class MatplotlibWidgetWL(QGraphicsView):
                 self.canvas.ax.text(ml1j12[i], 1.06, str(kml1[i]), horizontalalignment='center', \
                 verticalalignment='center',color='r',fontsize=8)
 
-        if self.setlegend:
-            self.legendobj = self.canvas.ax.legend(['ml=2', 'ml=1', 'ml=0'],loc="upper left",  bbox_to_anchor = [.02,0.98], fontsize=12)
-        self.setLegend(self.setlegend)
         self.canvas.ax.set_xlabel("Fundamental Wavelength (nm)")
         self.canvas.ax.set_title('Stark Manifold for n= ' + str(n), fontsize=12)
         if xlim1 == 0.0 and xlim2 == 1.0:
@@ -179,12 +173,6 @@ class MatplotlibWidgetWL(QGraphicsView):
         self.canvas.ax.set_xlim(xmin=xlim1, xmax=xlim2)
         self.canvas.draw()
 
-    def setLegend(self, setlegend):
-        self.setlegend = setlegend
-        if hasattr(self, 'legendobj'):
-            self.legendobj.set_visible(self.setlegend)
-            self.canvas.draw()
-     
     def clearDisplay(self):
         self.canvas.ax.clear()
         self.canvas.ax.set_title("", fontsize=12)
