@@ -59,7 +59,7 @@ class MatplotlibWidgetWL(QGraphicsView):
         datapath = QFileDialog.getOpenFileNames(self, 'Select Avgerage Trace File', self.filePath, '(*.txt)')
         if not datapath: return
         for i in range(len(datapath)):
-            self.data = loadtxt(str(datapath[i]), skiprows=2)
+            self.data.append(loadtxt(str(datapath[i]), skiprows=2))
         self.filePath = os.path.dirname(str(datapath[0]))
 
     def kRange(self, n, ml):
@@ -120,19 +120,23 @@ class MatplotlibWidgetWL(QGraphicsView):
             ml1j12 = [0]*len(kml1)
             for i in range(len(kml1)):
                 ml1j12[i] = (2*10**7)/(self.StarkEnergy(n, 1, kml1[i], Fau) -  (-rh-Lalphaj12)) + offset
-
-        if trace:
-            argy = self.data[:,3]/max(self.data[:,3])
-        else:
-            argy = self.data[:,1]/max(self.data[:,1])
-        if smooth:
-            argx = savitzky_golay(self.data[:,0], smoothwin, smoothpol)
-            argy = savitzky_golay(argy, smoothwin, smoothpol)
-        else:
-            argx = self.data[:,0]
-
-        self.canvas.ax.plot(argx, argy, color='k', linewidth=1.5) 
-
+               
+        colors = ['0.0','0.2','0.4','0.6']
+        ls = ['-','--',':','-.']
+        for i in range(len(self.data)):
+            data = self.data[i]
+            if trace:
+                argy = data[:,3]/max(data[:,3])
+            else:
+                argy = data[:,1]/max(data[:,1])
+            if smooth:
+                argx = savitzky_golay(data[:,0], smoothwin, smoothpol)
+                argy = savitzky_golay(argy, smoothwin, smoothpol)
+            else:
+                argx = data[:,0]
+            print ls[i]    
+            self.canvas.ax.plot(argx, argy, linestyle=ls[i], color='k', linewidth=1.4) 
+            
         if ml02j32flag:
             xx = [ml02j32, ml02j32]
             yy = [[-0.02]*len(ml02j32), [1.02]*len(ml02j32)]
