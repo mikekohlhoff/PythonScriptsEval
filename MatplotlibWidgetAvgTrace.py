@@ -51,6 +51,8 @@ class MatplotlibWidgetAvgTrace(QGraphicsView):
         fieldtraces = []
         surftraces = []
         
+        # 1. normalise data per trace
+        # 2. average normalised traces
         for i in range(len(plotdata)):
             if plotchkbox[i]:
                 # get maximum for normalisation from smoothed traced (window=5,order=3)
@@ -61,9 +63,9 @@ class MatplotlibWidgetAvgTrace(QGraphicsView):
         argx = data[:,0]
         # standard error of the mean
         fieldavg = np.mean(np.vstack(fieldtraces), axis=0)
-        fieldavgerr = np.std(np.vstack(fieldtraces), axis=0)/plotchkbox.count(True)
+        fieldavgerr = (np.std(np.vstack(fieldtraces), axis=0)/plotchkbox.count(True))
         surfavg = np.mean(np.vstack(surftraces), axis=0)
-        surfavgerr = np.std(np.vstack(surftraces), axis=0)/plotchkbox.count(True)
+        surfavgerr = (np.std(np.vstack(surftraces), axis=0)/plotchkbox.count(True))
 
         altgreen = '#66AA55'
         altblack = '#2A2A2A'

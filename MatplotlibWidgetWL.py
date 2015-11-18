@@ -47,7 +47,8 @@ class MatplotlibWidgetWL(QGraphicsView):
             self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
         else:
             self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
-
+        self.trace = [False, False, False, False]
+            
     pickedValReady = pyqtSignal(object)
     
     def onclick(self, event):
@@ -81,7 +82,7 @@ class MatplotlibWidgetWL(QGraphicsView):
               5754*k**2 - 8622*ml**2 + 16211)*F**4)*hartree
         return Eau
 
-    def plotSpectrum(self, n, ml02j32flag, ml1j32flag, ml02j12flag, ml1j12flag, trace, d, volt, offset, smooth, smoothwin, smoothpol):
+    def plotSpectrum(self, n, ml02j32flag, ml1j32flag, ml02j12flag, ml1j12flag, trace, d, volt, offset, smooth, smoothwin, smoothpol, normalise):
         if len(self.data) < 1: return
         # get curent xy limits
         xlim1, xlim2 = self.canvas.ax.get_xlim()
@@ -122,45 +123,50 @@ class MatplotlibWidgetWL(QGraphicsView):
                 ml1j12[i] = (2*10**7)/(self.StarkEnergy(n, 1, kml1[i], Fau) -  (-rh-Lalphaj12)) + offset
                
         colors = ['0.0','0.2','0.4','0.6']
-        ls = ['-','--',':','-.']
+        ls = ['-','-','-','-']
+        c = ['k', 'g', 'm', 'y']
         for i in range(len(self.data)):
             data = self.data[i]
-            if trace:
-                argy = data[:,3]/max(data[:,3])
+            self.trace[i] = trace
+            if self.trace[i]:
+                argy = data[:,3]
+                maxn = max(data[:,3])
             else:
-                argy = data[:,1]/max(data[:,1])
+                argy = data[:,1]
+                maxn = max(data[:,1])
             if smooth:
                 argx = savitzky_golay(data[:,0], smoothwin, smoothpol)
                 argy = savitzky_golay(argy, smoothwin, smoothpol)
             else:
                 argx = data[:,0]
-            print ls[i]    
-            self.canvas.ax.plot(argx, argy, linestyle=ls[i], color='k', linewidth=1.4) 
+            if normalise:
+                argy = argy/maxn
+            self.canvas.ax.plot(argx, argy, linestyle=ls[i], color=c[i], linewidth=1.4) 
             
         if ml02j32flag:
             xx = [ml02j32, ml02j32]
-            yy = [[-0.02]*len(ml02j32), [1.02]*len(ml02j32)]
+            yy = [[-0.08]*len(ml02j32), [1.02]*len(ml02j32)]
             self.canvas.ax.plot(xx,yy, 'b', linewidth=1.2)
             for i in range(len(ml02j32)):
                 self.canvas.ax.text(ml02j32[i], 1.06, str(kml02[i]), horizontalalignment='center', \
                 verticalalignment='center',color='b',fontsize=8)
         if ml1j32flag:
             xx = [ml1j32, ml1j32]
-            yy = [[-0.02]*len(ml1j32), [1.02]*len(ml1j32)]
+            yy = [[-0.08]*len(ml1j32), [1.02]*len(ml1j32)]
             self.canvas.ax.plot(xx,yy, 'b--', linewidth=1.2)
             for i in range(len(ml1j32)):
                 self.canvas.ax.text(ml1j32[i], 1.06, str(kml1[i]), horizontalalignment='center', \
                 verticalalignment='center',color='b',fontsize=8)
         if ml02j12flag:
             xx = [ml02j12, ml02j12]
-            yy = [[-0.02]*len(ml02j12), [1.02]*len(ml02j12)]
+            yy = [[-0.08]*len(ml02j12), [1.02]*len(ml02j12)]
             self.canvas.ax.plot(xx,yy, 'r', linewidth=1.2)
             for i in range(len(ml02j12)):
                 self.canvas.ax.text(ml02j12[i], 1.06, str(kml02[i]), horizontalalignment='center', \
                 verticalalignment='center',color='r',fontsize=8)
         if ml1j12flag:
             xx = [ml1j12, ml1j12]
-            yy = [[-0.02]*len(ml1j12), [1.02]*len(ml1j12)]
+            yy = [[-0.08]*len(ml1j12), [1.02]*len(ml1j12)]
             self.canvas.ax.plot(xx,yy, 'r--', linewidth=1.2)
             for i in range(len(ml1j12)):
                 self.canvas.ax.text(ml1j12[i], 1.06, str(kml1[i]), horizontalalignment='center', \
@@ -168,7 +174,7 @@ class MatplotlibWidgetWL(QGraphicsView):
 
         self.canvas.ax.set_xlabel("Fundamental Wavelength (nm)")
         self.canvas.ax.set_title('Stark Manifold for n= ' + str(n), fontsize=12)
-        if xlim1 == 0.0 and xlim2 == 1.0:
+        if (xlim1 == 0.0 and xlim2 == 1.0):
             xlim1 = min(argx)
             xlim2 = max(argx)
             ylim1 = 0
@@ -181,4 +187,5 @@ class MatplotlibWidgetWL(QGraphicsView):
         self.canvas.ax.clear()
         self.canvas.ax.set_title("", fontsize=12)
         self.data = []
+        self.trace = [False, False, False, False]
         self.canvas.draw()

@@ -103,7 +103,7 @@ class MatplotlibWidgetSingleTraces(QGraphicsView):
             axminy = -max(data[:,3])*0.04
         self.canvas.ax.set_ylim(ymin=axminy)
         axmaxx = max(argx)*1.04
-        self.canvas.ax.set_xlim(xmax=axmaxx)
+        #self.canvas.ax.set_xlim(xmax=axmaxx)
 
         self.canvas.fig.tight_layout()
         self.canvas.draw()
@@ -122,3 +122,7 @@ class MatplotlibWidgetSingleTraces(QGraphicsView):
             self.plotrefs[i][1].set_visible(self.chkboxlist[i])
         self.canvas.draw()
 
+    def saveFigure(self):
+        savepath = QFileDialog.getSaveFileName(self, 'Save Image to File', self.filePath, 'Image Files(*.pdf *.png)')
+        if not savepath: return
+        self.canvas.fig.savefig(str(savepath))

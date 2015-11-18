@@ -48,9 +48,8 @@ class MatplotlibWidgetOverview(QGraphicsView):
         self.smooth = False
         self.smoothwin = 5
         self.smoothpol = 3
-        self.normaliseflag = False
         # load colormap
-        self.cmap = plt.cm.winter
+        self.cmap = plt.cm.coolwarm
         self.setlegend = True
 
         if sys.platform == 'darwin':
@@ -80,10 +79,6 @@ class MatplotlibWidgetOverview(QGraphicsView):
         self.smoothpol = smoothpol
         self.plotTraces()
     
-    def normaliseParamChanged(self, normaliseflag):
-        self.normaliseflag = normaliseflag
-        self.plotTraces()
-
     def plotTraces(self):
         if len(self.datafield) < 1: return
         color = iter(self.cmap(np.linspace(0,1,len(self.dataheader))))
@@ -91,37 +86,26 @@ class MatplotlibWidgetOverview(QGraphicsView):
         for i in range(len(self.dataheader)):
             data = self.datafield[i]
             c = next(color)
-            if self.normaliseflag and not(self.smooth):
-                argx = data[:,0]
-                argsurf = data[:,1]/max(savitzky_golay(data[:,1], 5, 3))
-                errsurf = data[:,2]*(1/max(savitzky_golay(data[:,1], 5, 3)))
-                argfield = data[:,3]/max(savitzky_golay(data[:,3], 5, 3))
-                errfield = data[:,4]*(1/max(savitzky_golay(data[:,3], 5, 3)))
-            elif self.normaliseflag and self.smooth:
-                argx = savitzky_golay(data[:,0], self.smoothwin, self.smoothpol)
-                argsurf = savitzky_golay(data[:,1]/max(savitzky_golay(data[:,1], 5, 3)), self.smoothwin, self.smoothpol)
-                errsurf = data[:,2]*(1/max(savitzky_golay(data[:,1], 5, 3)))
-                argfield = savitzky_golay(data[:,3]/max(savitzky_golay(data[:,3], 5, 3)), self.smoothwin, self.smoothpol)
-                errfield = data[:,4]*(1/max(savitzky_golay(data[:,3], 5, 3)))
-            elif self.smooth and not(self.normaliseflag):
+
+            errsurf = data[:,2]
+            errfield = data[:,4]
+
+            if self.smooth:
                 argx = savitzky_golay(data[:,0], self.smoothwin, self.smoothpol)
                 argsurf = savitzky_golay(data[:,1], self.smoothwin, self.smoothpol)
-                errsurf = data[:,2]
                 argfield = savitzky_golay(data[:,3], self.smoothwin, self.smoothpol)
-                errfield = data[:,4]
+
             else:
                 argx = data[:,0]
                 argsurf = data[:,1]
-                errsurf = data[:,2]
                 argfield = data[:,3]
-                errfield = data[:,4]
 
             if self.plotmode == 'Surface':
                 self.canvas.ax.plot(argx, argsurf, color=c, linewidth=1.5, label=self.dataheader[i]) 
                 self.canvas.ax.errorbar(argx, argsurf, yerr=errsurf, fmt='none', elinewidth=1.5, \
                 capsize=2, capthick=0.5, ecolor=c)
             elif self.plotmode == 'Field':
-                self.canvas.ax.plot(argx, argfield, color=c, linewidth=1.5) 
+                self.canvas.ax.plot(argx, argfield, color=c, linewidth=1.5, label=self.dataheader[i])
                 self.canvas.ax.errorbar(argx, argfield, yerr=errfield, fmt='none', elinewidth=1.5, \
                 capsize=2, capthick=0.5, ecolor=c)
             elif self.plotmode == 'Both':
@@ -134,11 +118,7 @@ class MatplotlibWidgetOverview(QGraphicsView):
         
         self.legendobj = self.canvas.ax.legend(loc="upper left",  bbox_to_anchor = [.02,0.98], fontsize=12)
         self.setLegend(self.setlegend)
-        if self.normaliseflag:
-            axminy = -0.04
-        else:
-            axminy = -max(data[:,3])*0.04
-        self.canvas.ax.set_ylim(ymin=axminy)
+        self.canvas.ax.set_ylim(ymin=-0.04)
         axmaxx = max(data[:,0])*1.04
         self.canvas.ax.set_xlim(xmax=axmaxx)
         self.canvas.fig.tight_layout()
@@ -176,7 +156,6 @@ class MatplotlibWidgetOverview(QGraphicsView):
     def setTitle(self, text):
         self.canvas.ax.set_title(text, fontsize=12)
         self.canvas.draw()
-        # todo replace in header
         
     def setAxisTitle(self, text):
         self.canvas.ax.set_xlabel(text, fontsize=12)
