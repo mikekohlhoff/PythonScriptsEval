@@ -50,12 +50,15 @@ class MatplotlibWidgetOverview(QGraphicsView):
         self.smoothpol = 3
         # load colormap
         self.cmap = plt.cm.coolwarm
+        self.singlecolors = ['k', 'b', 'g', 'r', 'y', 'm']
         self.setlegend = True
 
         if sys.platform == 'darwin':
-            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
+            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data'
+            self.savePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data'
         else:
-            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
+            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data'
+            self.savePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data'
     
     def receiveTrace(self, data, title):
         self.datafield.append(data)
@@ -85,7 +88,10 @@ class MatplotlibWidgetOverview(QGraphicsView):
         self.canvas.ax.clear()
         for i in range(len(self.dataheader)):
             data = self.datafield[i]
-            c = next(color)
+            if len(self.dataheader) < 7:
+                c = self.singlecolors[i]
+            else:
+                c = next(color)
 
             errsurf = data[:,2]
             errfield = data[:,4]
@@ -202,7 +208,7 @@ class MatplotlibWidgetOverview(QGraphicsView):
         np.savetxt(str(savepath), savedata, fmt=fmtIn, delimiter='\t', newline='\n', header=headertext)
 
     def saveFigure(self):
-        savepath = QFileDialog.getSaveFileName(self, 'Save Image to File', self.filePath, 'Image Files(*.pdf *.png)')
+        savepath = QFileDialog.getSaveFileName(self, 'Save Image to File', self.savePath, 'Image Files(*.pdf *.png)')
         if not savepath: return
         self.canvas.fig.savefig(str(savepath))
-     
+        self.savePath = os.path.dirname(str(savepath))

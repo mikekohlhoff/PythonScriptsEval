@@ -53,10 +53,7 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
         self.WLScanGraph.pickedValReady.connect(self.updatePickedDisplayStarkScan)
 
         # Single Traces Display
-        self.btn_addSingleTraces.clicked.connect(lambda: self.chk_dispSingleTracesNormalise.setChecked(False))
-        self.btn_addSingleTraces.clicked.connect(lambda: self.SingleTracesGraph.addTrace(self.scanModeSelect.currentText(),
-        self.chk_dispSingleTracesNormalise.isChecked()))
-        self.btn_addSingleTraces.clicked.connect(lambda: self.inp_avgTraceSetTitle.setText(''))
+        self.btn_addSingleTraces.clicked.connect(self.addSingleTraces)
         self.btn_clearSingleTraces.clicked.connect(self.resetTraceChkboxes)
         self.btn_clearSingleTraces.clicked.connect(lambda: self.out_inpTraces.setText(''))
         self.SingleTracesGraph.loadedfile.connect(self.displayFileNames)
@@ -68,11 +65,12 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
         self.chk_dispSingleTrace4.clicked.connect(self.traceSelectionChanged)
         self.chk_dispSingleTrace5.clicked.connect(self.traceSelectionChanged)
         self.chk_dispSingleTrace6.clicked.connect(self.traceSelectionChanged)
-        self.btn_addSingleTraces.clicked.connect(lambda: self.AvgTraceGraph.plotAvgTrace(self.scanModeSelect.currentText(),
-                                                self.SingleTracesGraph.datafiles, self.SingleTracesGraph.chkboxlist))
         self.chk_dispSingleTracesNormalise.clicked.connect(self.plotNormTrace)
         self.btn_updateDistance.clicked.connect(self.updateDistance)
         self.btn_singleTracesSaveFig.clicked.connect(self.SingleTracesGraph.saveFigure)
+        self.inp_singlebaselineleft.valueChanged.connect(self.baselineValueSinglesChanged)
+        self.inp_singlebaselineright.valueChanged.connect(self.baselineValueSinglesChanged)
+        self.inp_singlesurfbias.valueChanged.connect(self.surfBiasChanged)
         
         # Avg Trace Display
         self.btn_avgTraceSave.clicked.connect(lambda: self.AvgTraceGraph.saveTrace(self.scanModeSelect.currentText()))
@@ -106,7 +104,9 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
         self.inp_baselineright.valueChanged.connect(self.baselineValueMatrixChanged)
         self.btn_matrixCalculate.clicked.connect(self.calculateMatrixData)
         self.MatrixGraphData.plotAgain.connect(self.plotMatrixData)
-
+        self.btn_matrixSaveData.clicked.connect(lambda: self.MatrixGraphData.saveTrace(self.plotModeMatrix.currentText()))
+        self.btn_traceokall.clicked.connect(self.setAllChecked)
+        
         # Overview Display
         self.btn_avgTraceSend.clicked.connect(self.sendTrace)
         self.inp_overviewSetTitle.editingFinished.connect(lambda: self.OverviewGraph.setTitle(self.inp_overviewSetTitle.text()))
@@ -131,17 +131,18 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
         self.SingleTracesGraph.distmeshsurf = lastval
         self.MatrixGraphRaw.distmeshsurf = lastval
         self.MatrixGraphData.distmeshsurf = lastval
+        self.AvgTraceGraph.distmeshsurf = lastval
         self.inp_dSurfMesh.setValue(lastval)
         self.out_fieldDist.setText(str(lastval))
         self.out_fieldDistVel.setText(str(lastval))
         self.textWLDiff.setText('dWL to zero field: \n -0.0265nm')
         self.inp_laserOffset.setValue(-0.2)
-        self.out_datastatus.setText('No Data Processed')
+        self.out_datastatus.setText('No Data')
         self.out_datastatus.setStyleSheet("background-color: red;")
         if sys.platform == 'darwin':
-            self.savepath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
+            self.savepath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data'
         else:
-            self.savepath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
+            self.savepath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data'
         self.setWindowTitle('RSE Data Evaluation')
         self.setFixedSize(1006, 644)
         self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
@@ -152,17 +153,50 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
         self.out_pickedWL.setText('{:3.5f}'.format(val))
 
     # Single Traces Display
+    def addSingleTraces(self):
+        self.chk_dispSingleTracesNormalise.setChecked(False)
+        l = self.SingleTracesGraph.addTrace(self.scanModeSelect.currentText(), self.chk_dispSingleTracesNormalise.isChecked())
+        self.inp_avgTraceSetTitle.setText('')
+        self.inp_singlebaselineright.setValue(l)
+        self.inp_singlebaselineleft.setValue(l-5)
+        self.singlebaselinematrixmax = l
+        self.SingleTracesGraph.plotTraces(self.scanModeSelect.currentText(), self.chk_dispSingleTracesNormalise.isChecked(), \
+        self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
+        self.AvgTraceGraph.plotAvgTrace(self.scanModeSelect.currentText(), self.SingleTracesGraph.datafiles, self.SingleTracesGraph.chkboxlist\
+        , self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
+            
+    def baselineValueSinglesChanged(self):
+        if not(self.inp_singlebaselineleft.hasFocus()) and not(self.inp_singlebaselineright.hasFocus()): return
+        if self.inp_singlebaselineright.value() > self.singlebaselinematrixmax:
+            self.inp_baselineright.setValue(self.baselinematrixmax)
+            return
+        if self.inp_singlebaselineleft.value() >= self.inp_singlebaselineright.value():
+            self.inp_singlebaselineleft.setValue(self.inp_singlebaselineright.value()-1)
+        self.SingleTracesGraph.plotTraces(self.scanModeSelect.currentText(), self.chk_dispSingleTracesNormalise.isChecked(), \
+        self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
+        self.AvgTraceGraph.plotAvgTrace(self.scanModeSelect.currentText(), self.SingleTracesGraph.datafiles, self.SingleTracesGraph.chkboxlist\
+        , self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
+              
     def traceSelectionChanged(self):
         if len(self.SingleTracesGraph.dataheader) < 1: return
         for i in range(len(self.SingleTracesGraph.chkboxlist)):
             self.SingleTracesGraph.chkboxlist[i] = self.chkboxrefs[i].isChecked()
         self.SingleTracesGraph.toggleVisibility()
-        self.AvgTraceGraph.plotAvgTrace(self.scanModeSelect.currentText(), self.SingleTracesGraph.datafiles, self.SingleTracesGraph.chkboxlist)
+        self.AvgTraceGraph.plotAvgTrace(self.scanModeSelect.currentText(), self.SingleTracesGraph.datafiles, self.SingleTracesGraph.chkboxlist \
+        , self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
     
     def plotNormTrace(self):
-        self.SingleTracesGraph.plotTraces(self.scanModeSelect.currentText(), self.chk_dispSingleTracesNormalise.isChecked())
-        self.SingleTracesGraph.toggleVisibility()
+        self.SingleTracesGraph.plotTraces(self.scanModeSelect.currentText(), self.chk_dispSingleTracesNormalise.isChecked(), \
+        self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
 
+        self.SingleTracesGraph.toggleVisibility()
+    
+    def surfBiasChanged(self):
+        self.SingleTracesGraph.plotTraces(self.scanModeSelect.currentText(), self.chk_dispSingleTracesNormalise.isChecked(), \
+        self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
+        self.AvgTraceGraph.plotAvgTrace(self.scanModeSelect.currentText(), self.SingleTracesGraph.datafiles, self.SingleTracesGraph.chkboxlist\
+        , self.inp_singlebaselineleft.value(), self.inp_singlebaselineright.value(), self.inp_singlesurfbias.value())
+         
     def resetTraceChkboxes(self):
         for i in range(len(self.SingleTracesGraph.chkboxlist)):
             self.SingleTracesGraph.chkboxlist[i] = False
@@ -182,9 +216,16 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
         file = open('meshsurfacedistance.pckl')
         lastval = pickle.load(file)
         file.close()
+     
         self.distmeshsurf = lastval
         self.WLScanGraph.distmeshsurf = lastval
+        self.SingleTracesGraph.distmeshsurf = lastval
+        self.MatrixGraphRaw.distmeshsurf = lastval
+        self.MatrixGraphData.distmeshsurf = lastval
+        self.AvgTraceGraph.distmeshsurf = lastval
+        self.inp_dSurfMesh.setValue(lastval)
         self.out_fieldDist.setText(str(lastval))
+        self.out_fieldDistVel.setText(str(lastval))
 
     # Avg Trace Display
     def sendTrace(self):
@@ -214,7 +255,7 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
             self.chkboxmatrix[i].setChecked(self.MatrixGraphRaw.chkboxlist[i])
         self.out_avgstatus.setText('Incomplete')
         self.out_avgstatus.setStyleSheet("background-color: red;")
-        self.out_datastatus.setText('No Data Processed')
+        self.out_datastatus.setText('No Data')
         self.out_datastatus.setStyleSheet("background-color: red;")
         self.plotMatrixRaw()
 
@@ -274,7 +315,16 @@ class DataEvalGui(QtGui.QMainWindow, ui_form):
             self.out_avgstatus.setStyleSheet("background-color: green;")
             self.out_datastatus.setText('Data Ready')
             self.out_datastatus.setStyleSheet("background-color: yellow;")
-
+            
+    def  setAllChecked(self):
+        for i in range(len(self.MatrixGraphRaw.traceselect)):
+            self.MatrixGraphRaw.traceselect[i] = [True]*len(self.MatrixGraphRaw.data)
+            
+        self.out_avgstatus.setText('Complete')
+        self.out_avgstatus.setStyleSheet("background-color: green;")
+        self.out_datastatus.setText('Data Ready')
+        self.out_datastatus.setStyleSheet("background-color: yellow;")
+            
     def baselineValueMatrixChanged(self):
         if not(self.inp_baselineleft.hasFocus()) and not(self.inp_baselineright.hasFocus()): return
         if self.inp_baselineright.value() > self.baselinematrixmax:

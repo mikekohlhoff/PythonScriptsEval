@@ -48,9 +48,9 @@ class MatplotlibWidgetMatrixRaw(QGraphicsView):
         self.traceselect = []
         self.setlegend = False
         if sys.platform == 'darwin':
-            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
+            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2016'
         else:
-            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
+            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2016'
         
         self.chkboxlist = [False, False, False, False, False, False]
         self.colors = ['k','b','r','g', 'c', 'm']
@@ -119,16 +119,16 @@ class MatplotlibWidgetMatrixRaw(QGraphicsView):
                 self.canvas.ax.set_title('Single Traces', fontsize=12)
                 self.canvas.ax.set_xlim(xmin=0, xmax=max(argxvolt)*1.04)
 
-                if baseline:
-                    # overlay for baseline correction
-                    y0, y1 = self.canvas.ax.get_ylim()
-                    if argxvolt[-1] < argxvolt[0]:
-                        argxvolt = argxvolt[::-1]
-                    width = abs(argxvolt[baseright-1] - argxvolt[baseleft-1])
-                    self.canvas.ax.add_patch(patches.Rectangle((argxvolt[baseleft-1], y0), width, y1-y0, fc='k', alpha=0.1))
+        if baseline:
+            # overlay for baseline correction
+            y0, y1 = self.canvas.ax.get_ylim()
+            if argxvolt[-1] < argxvolt[0]:
+                argxvolt = argxvolt[::-1]
+            width = abs(argxvolt[baseright-1] - argxvolt[baseleft-1])
+            self.canvas.ax.add_patch(patches.Rectangle((argxvolt[baseleft-1], y0), width, y1-y0, fc='k', alpha=0.1))
 
-            self.canvas.ax.axhline(lw=1, c='k', ls='--')
-            self.canvas.draw()
+        self.canvas.ax.axhline(lw=1, c='k', ls='--')
+        self.canvas.draw()
 
     def getPlotData(self):
         plotdata = []

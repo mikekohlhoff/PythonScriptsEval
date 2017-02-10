@@ -44,9 +44,9 @@ class MatplotlibWidgetWL(QGraphicsView):
         self.data = []
         self.distmeshsurf = 1.
         if sys.platform == 'darwin':
-            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
+            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data'
         else:
-            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
+            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data'
         self.trace = [False, False, False, False]
             
     pickedValReady = pyqtSignal(object)

@@ -12,6 +12,7 @@ import math
 from pylab import *
 import os
 from Smoothing import *
+import matplotlib.patches as patches
 
 class MplCanvas(FigureCanvas):
     def __init__(self):
@@ -42,9 +43,9 @@ class MatplotlibWidgetSingleTraces(QGraphicsView):
         # default max avg traces: 6
         self.chkboxlist = [False, False, False, False, False, False]
         if sys.platform == 'darwin':
-            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
+            self.filePath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data'
         else:
-            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
+            self.filePath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data'
         self.colors = ['k','b','r','g', 'c', 'm']
         self.distmeshsurf = 1.
     
@@ -60,20 +61,21 @@ class MatplotlibWidgetSingleTraces(QGraphicsView):
         for i in range(len(datapath)):
             self.dataheader.append(os.path.basename(str(datapath[i])))
             self.datafiles.append(loadtxt(str(datapath[i]),skiprows=2))
-        self.plotTraces(xlabeltext, normalizeflag)
         self.chkboxlist = [False, False, False, False, False, False]
         for i in range(len(self.dataheader)):
             self.chkboxlist[i] = True
         self.loadedfile.emit(self.dataheader,self.chkboxlist)
         self.filePath = os.path.dirname(str(datapath[0]))
+        return len(self.datafiles[0][:,0])
 
-    def plotTraces(self, xlabeltext, normalizeflag):
+    def plotTraces(self, xlabeltext, normalizeflag, bleft, bright, surfbias):
         self.canvas.ax.clear()
         self.plotrefs = []
         for i in range(len(self.dataheader)):
             data = self.datafiles[i]
             if xlabeltext == 'Voltage':
-                argx = data[:,0]/self.distmeshsurf
+                # extraction mesh negative
+                argx = (data[:,0] + surfbias)/self.distmeshsurf
             else:
                 argx = data[:,0]
             if normalizeflag:
@@ -97,16 +99,19 @@ class MatplotlibWidgetSingleTraces(QGraphicsView):
 
         self.canvas.ax.set_title('Single Traces', fontsize=12)
         self.canvas.ax.legend(loc="upper left",  bbox_to_anchor = [.02,0.98], fontsize=8)
-        if normalizeflag:
-            axminy = -0.04
-        else:
-            axminy = -max(data[:,3])*0.04
-        self.canvas.ax.set_ylim(ymin=axminy)
         axmaxx = max(argx)*1.04
-        #self.canvas.ax.set_xlim(xmax=axmaxx)
+        self.canvas.ax.set_xlim(xmax=axmaxx)
 
-        self.canvas.fig.tight_layout()
+        # overlay for baseline correction
+        y0, y1 = self.canvas.ax.get_ylim()
+        if argx[-1] < argx[0]:
+            argx = argx[::-1]
+        width = abs(argx[bright-1] - argx[bleft-1])
+        self.canvas.ax.add_patch(patches.Rectangle((argx[bleft-1], y0), width, y1-y0, fc='k', alpha=0.1))
+        self.canvas.ax.axhline(lw=1, c='k', ls='--')
+
         self.canvas.draw()
+
 
     def clearDisplay(self):
         self.canvas.ax.clear()

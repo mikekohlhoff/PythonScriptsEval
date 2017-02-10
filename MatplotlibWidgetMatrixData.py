@@ -41,10 +41,10 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
                 }
         plt.rcParams.update(params)
         if sys.platform == 'darwin':
-            self.savepath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
+            self.savepath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data'
         else:
-            self.savepath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
-        self.cmap = plt.cm.Blues
+            self.savepath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data'
+        self.cmap = plt.cm.afmhot
         self.contourcmap = plt.cm.bone
         self.dataready = False
 
@@ -118,26 +118,40 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
                     self.canvas.ax.errorbar(argx, fieldavg, yerr=fieldavgerr, fmt='None', ecolor='k', elinewidth=1.5, capsize=2, capthick=0.5)
                     self.canvas.ax.errorbar(argx, surfavg, yerr=surfavgerr, fmt='None', ecolor='g', elinewidth=1.5, capsize=2, capthick=0.5)
 
-            self.canvas.ax.set_xlabel("Extraction Voltage (V)", fontsize=12)
+            self.canvas.ax.set_xlabel("Extraction Field (V/cm)", fontsize=12)
             self.canvas.ax.set_title('Average of Single Traces', fontsize=12)
             self.canvas.ax.legend(loc="upper left", bbox_to_anchor = [.022,0.98], fontsize=12)
             self.canvas.ax.set_xlim(xmin=0, xmax=max(argx)*1.04)
             self.canvas.ax.axhline(lw=1, c='k', ls='--')
             self.canvas.fig.tight_layout()
             self.canvas.draw()
-
+        
         elif mode == 'All Traces':
             if not(self.dataready): return
-            color=iter(self.cmap(np.linspace(0.3,1,len(self.singletraces))))
+            color=iter(self.cmap(np.linspace(0,1,len(self.singletraces))))
+            print np.linspace(0,1,31)
+            x = self.integrals[:,0]
+            vels = (0.46/x)*math.sin(math.radians(20))
+            fint = open('tracesout.txt', 'w')
+            fintf = open('tracesoutfield.txt', 'w')
+            
             for i in range(len(self.singletraces)):
                 x = self.singletraces[i][:,0]
                 y = self.singletraces[i][:,2]
                 if smooth:
                     y = savitzky_golay(y, smoothwin, smoothpol)
+                print max(y)
                 c = next(color)
                 self.canvas.ax.plot(x, y, color=c, linewidth=1.5)
+                for j in range(len(y)):
+                    fint.write(str(y[j]) + '\t')
+                fint.write('\n')
+            for k in range(len(x)):
+                fintf.write(str(x[k]) + '\t')
+            fint.close()
+            fintf.close()
                 
-            self.canvas.ax.set_xlabel("Extraction Voltage (V)", fontsize=12)
+            self.canvas.ax.set_xlabel("Extraction Field (V/cm)", fontsize=12)
             self.canvas.ax.set_ylabel("Normalised Surface signal", fontsize=12)
             self.canvas.ax.set_title('Average of Single Traces', fontsize=12)
             self.canvas.fig.tight_layout()
@@ -161,6 +175,9 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
             self.canvas.ax.set_ylabel('Integrated Surface Traces (arb)', fontsize=12)
             self.canvas.fig.tight_layout()
             self.canvas.draw()
+            self.savedata = np.hstack((np.vstack(vels), np.vstack(y)))
+            self.fmtIn = '%.3f'
+            
 
         elif mode == 'Derivative': 
             if not(self.dataready): return
@@ -170,17 +187,20 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
             x = self.derivatives[tracenum-1][:,0]
             y = self.derivatives[tracenum-1][:,2]
             delay = self.derivatives[tracenum-1][0,1]
-            label = '{:.0f}'.format(((dist/delay)*math.sin(math.radians(20)))) + '(m/s)'
+            vel = (dist/delay)*math.sin(math.radians(20))
+            label = '{:.0f}'.format(vel) + '(m/s)'
 
             if smooth:
                 y = savitzky_golay(y, smoothwin, smoothpol)
             self.canvas.ax.plot(x, y, c='k', linewidth=1.5, label=label)
-            self.canvas.ax.set_xlabel("Extraction Voltage (V)", fontsize=12)
+            self.canvas.ax.set_xlabel("Extraction Field (V/cm)", fontsize=12)
             self.canvas.ax.set_ylabel("Derivative of Surface signal", fontsize=12)
             self.canvas.ax.legend(loc="upper left", bbox_to_anchor = [.022,0.98], fontsize=12)
             self.canvas.fig.tight_layout()
             self.canvas.draw()
-
+            self.savedata = np.hstack((np.vstack(x), np.vstack(y), np.vstack(vel*np.ones(len(x)))))
+            self.fmtIn = '%.3f'
+            
         elif mode == 'All Derivatives':
             if not(self.dataready): return
             color=iter(self.cmap(np.linspace(0.3,1,len(self.derivatives))))
@@ -192,7 +212,7 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
                 c = next(color)
                 self.canvas.ax.plot(x, y, color=c, linewidth=1.5)
 
-            self.canvas.ax.set_xlabel("Extraction Voltage (V)", fontsize=12)
+            self.canvas.ax.set_xlabel("Extraction Field (V/cm)", fontsize=12)
             self.canvas.ax.set_ylabel("Derivative Surface signal", fontsize=12)
             self.canvas.fig.tight_layout()
             self.canvas.draw()
@@ -203,7 +223,8 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
             cmap = self.contourcmap
 
             V = self.contourdata[0]
-            D = dist/self.contourdata[1]
+            D = (dist/self.contourdata[1])*math.sin(math.radians(20))
+
             if smooth:
                 Z = self.contourdata[3]
             else:
@@ -211,7 +232,7 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
             
             self.canvas.ax.contourf(V,D,Z,50,cmap=cmap)
 
-            self.canvas.ax.set_xlabel("Extraction Voltage (V)", fontsize=12)
+            self.canvas.ax.set_xlabel("Extraction Field (V/cm)", fontsize=12)
             self.canvas.ax.set_ylabel("Velocity (m/s)", fontsize=12)
             self.canvas.ax.set_title("Surface Ionisation Signal", fontsize=12)
 
@@ -225,7 +246,8 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
             cmap = self.contourcmap
 
             V = self.contourderivative[0]
-            D = dist/self.contourderivative[1]
+            D = (dist/self.contourdata[1])*math.sin(math.radians(20))
+
             if smooth:
                 Z = self.contourderivative[3]
             else:
@@ -233,7 +255,7 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
             
             self.canvas.ax.contourf(V,D,Z,50,cmap=cmap)
 
-            self.canvas.ax.set_xlabel("Extraction Voltage (V)", fontsize=12)
+            self.canvas.ax.set_xlabel("Extraction Field (V/cm)", fontsize=12)
             self.canvas.ax.set_ylabel("Velocity (m/s)", fontsize=12)
             self.canvas.ax.set_title("dSIP/dF", fontsize=12)
 
@@ -242,7 +264,7 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
 
     def calculateAllData(self, statusref, datain, bl, br, datastructure, traceselect, swin, spol):
         self.statusref = statusref
-        statusref.setText('Calculating')
+        statusref.setText('Processing')
 
         # copy data over
         data = copy.deepcopy(datain)
@@ -272,17 +294,10 @@ class MatplotlibWidgetMatrixData(QGraphicsView):
         self.contourdata = []
 
     def saveTrace(self, scanparam):
-        savepath = QFileDialog.getSaveFileName(self, 'Save Average Trace to File', self.savepath, '(*.txt)')
+        savepath = QFileDialog.getSaveFileName(self, 'Save ' + scanparam + ' to File', self.savepath, '(*.txt)')
         if not savepath: return
         self.savepath = os.path.dirname(str(savepath))
-        if 'Voltage' in scanparam:
-            fmtIn = '%.3f'
-        elif 'Wavelength' in scanparam:
-            # smallest step .00025nm
-            fmtIn = '%.5f'
-        elif 'Delay' in scanparam:
-            fmtIn = '%.11f'
-        np.savetxt(str(savepath), self.savedata, fmt=fmtIn, delimiter='\t', newline='\n')
+        np.savetxt(str(savepath), self.savedata, fmt=self.fmtIn, delimiter='\t', newline='\n')
 
     def saveFigure(self):
         savepath = QFileDialog.getSaveFileName(self, 'Save Image to File', self.savepath, 'Image Files(*.pdf *.png)')
@@ -323,6 +338,7 @@ class DataProcessingThread(QThread):
         # 1. baseline correct per trace
         # 2. normalise per trace
         # 3. average normalised and baseline corrected traces
+        fmax = open('maxfield.txt', 'w')
         for j in range(self.c):
             # j = trace number
             
@@ -332,8 +348,10 @@ class DataProcessingThread(QThread):
             # choose traces from manual pre-processing
             tracecount = 0
             r = self.r
+            
             for i in range(len(self.data)):
                 if self.tselect[j][i]:
+                    # if trace selected increment trace count
                     tracecount += 1
 
                     data = self.data[i]
@@ -357,14 +375,20 @@ class DataProcessingThread(QThread):
 
                 surf.append(ysurf)
                 field.append(yfield)
-        
+             
             # standard error of the mean
             surfavg = np.mean(np.vstack(surf), axis=0)
-            surfavgerr = np.std(np.vstack(surf), axis=0)/tracecount
+            fieldavg = np.mean(np.vstack(field), axis=0)
+            fieldavgerr = np.std(np.vstack(field), axis=0)
+            fieldavgerrindex = fieldavgerr[np.argmax(fieldavg)]
+            surfavgerr = np.std(np.vstack(surf), axis=0)# TODO /tracecount
                 
             # build list of argx2 traces
-            traces.append(np.hstack((np.vstack(argx1), np.vstack(argx2), np.vstack(surfavg), np.vstack(surfavgerr))))
-           
+            traces.append(np.hstack((np.vstack(argx1), np.vstack(argx2), np.vstack(surfavg), np.vstack(surfavgerr), np.vstack(fieldavg))))
+            fmax.write(str(max(fieldavg)) + '\t' + str(fieldavgerrindex) + '\n')
+        fmax.close()
+        print 'TODO ERROR CALCULATION'
+
         # integrate surface profiles
         IntTraces = []
         dydx = []

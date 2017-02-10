@@ -39,11 +39,12 @@ class MatplotlibWidgetAvgTrace(QGraphicsView):
                 }
         plt.rcParams.update(params)
         if sys.platform == 'darwin':
-            self.savepath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data/2015'
+            self.savepath = '/Users/TPSGroup/Documents/Experimental Data/Data Mike/Raw Data'
         else:
-            self.savepath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data\\2015'
-
-    def plotAvgTrace(self, xlabeltext, plotdata, plotchkbox):
+            self.savepath = 'C:\\Users\\tpsgroup\\Desktop\\Documents\\Data Mike\\Raw Data'
+        self.distmeshsurf = 1
+            
+    def plotAvgTrace(self, xlabeltext, plotdata, plotchkbox, bleft, bright, surfbias):
         if plotchkbox.count(True) == 0:
             self.clearDisplay()
             return
@@ -57,10 +58,20 @@ class MatplotlibWidgetAvgTrace(QGraphicsView):
             if plotchkbox[i]:
                 # get maximum for normalisation from smoothed traced (window=5,order=3)
                 data = plotdata[i]
+                # extraction mesh negative
+                argx = (data[:,0] + surfbias)/self.distmeshsurf
+                argsurf = data[:,3]
+                # get baseline shift 
+                if argx[-1] < argx[0]:
+                    # dependent on incremental direction in scan
+                    argsb = argsurf[::-1]
+                else: argsb = argsurf
+                boff = np.mean(argsb[bleft-1:bright])
+                argsurf -= boff
+                
                 fieldtraces.append(data[:,1]/max(savitzky_golay(data[:,1], 5, 3)))
-                surftraces.append(data[:,3]/max(savitzky_golay(data[:,1], 5, 3)))
+                surftraces.append(argsurf/max(savitzky_golay(data[:,1], 5, 3)))
 
-        argx = data[:,0]
         # standard error of the mean
         fieldavg = np.mean(np.vstack(fieldtraces), axis=0)
         fieldavgerr = (np.std(np.vstack(fieldtraces), axis=0)/plotchkbox.count(True))
@@ -85,12 +96,11 @@ class MatplotlibWidgetAvgTrace(QGraphicsView):
 
         self.canvas.ax.set_title('Average of Single Traces', fontsize=12)
         self.canvas.ax.legend(loc="upper left", bbox_to_anchor = [.022,0.98], fontsize=12)
-        axminy = -0.04
+        axminy = -max(surfavg)*0.06
         self.canvas.ax.set_ylim(ymin=axminy)
         axmaxx = max(data[:,0])*1.04
         self.canvas.ax.set_xlim(xmax=axmaxx)
-
-        self.canvas.fig.tight_layout()
+        self.canvas.ax.axhline(lw=1, c='k', ls='--')
         self.canvas.draw()
         
         self.savedata = np.hstack((np.vstack(argx), np.vstack(surfavg), np.vstack(surfavgerr), np.vstack(fieldavg), np.vstack(fieldavgerr)))
